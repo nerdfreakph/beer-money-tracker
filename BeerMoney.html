@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Beer Money Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Smooth scroll for tables on small screens */
+    .table-wrap { overflow-x: auto; }
+  </style>
+</head>
+<body class="bg-[whitesmoke]">
+  <!-- Centered Dark Background Container -->
+  <div class="min-h-screen flex justify-center py-6">
+    <div class="bg-[#0f172a] text-white p-6 rounded-xl shadow-lg w-full max-w-5xl">
+      
+      <!-- Header -->
+      <h1 class="text-2xl font-bold mb-6 flex items-center gap-2">
+        🍺 Beer Money Tracker
+      </h1>
+
+      <!-- Apps and Currencies -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <!-- Apps Card -->
+        <div class="bg-[#1e293b] p-4 rounded-lg shadow">
+          <h2 class="text-lg font-semibold mb-3">Apps</h2>
+          <form id="appForm" class="flex gap-2 mb-3">
+            <input id="appInput" type="text" placeholder="New App"
+                   class="flex-1 p-2 rounded bg-[whitesmoke] text-slate-900 placeholder-slate-500 border border-gray-600" required/>
+            <button class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded">Add</button>
+          </form>
+          <ul id="appList" class="space-y-1 text-sm"></ul>
+        </div>
+
+        <!-- Currencies Card -->
+        <div class="bg-[#1e293b] p-4 rounded-lg shadow">
+          <h2 class="text-lg font-semibold mb-3">Currencies</h2>
+          <form id="currencyForm" class="flex gap-2 mb-3">
+            <input id="currencyInput" type="text" placeholder="New Currency (e.g., PHP, USD)"
+                   class="flex-1 p-2 rounded bg-[whitesmoke] text-slate-900 placeholder-slate-500 border border-gray-600" required/>
+            <button class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded">Add</button>
+          </form>
+          <ul id="currencyList" class="space-y-1 text-sm"></ul>
+        </div>
+      </div>
+
+      <!-- Add Beer Money Entry -->
+      <div class="bg-[#1e293b] p-4 rounded-lg shadow mb-6">
+        <h2 class="text-lg font-semibold mb-3">Add Beer Money Entry</h2>
+        <form id="entryForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm mb-1">App</label>
+            <select id="appSelect"
+                    class="w-full p-2 rounded bg-[whitesmoke] text-slate-900 border border-gray-600" required></select>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Currency</label>
+            <select id="currencySelect"
+                    class="w-full p-2 rounded bg-[whitesmoke] text-slate-900 border border-gray-600" required></select>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Amount</label>
+            <input id="amountInput" type="number" step="0.01" min="0"
+                   class="w-full p-2 rounded bg-[whitesmoke] text-slate-900 placeholder-slate-500 border border-gray-600" required/>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Remarks</label>
+            <input id="remarksInput" type="text"
+                   class="w-full p-2 rounded bg-[whitesmoke] text-slate-900 placeholder-slate-500 border border-gray-600" required/>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Date</label>
+            <input id="dateInput" type="date"
+                   class="w-full p-2 rounded bg-[whitesmoke] text-slate-900 border border-gray-600" required/>
+          </div>
+          <div class="flex items-end">
+            <button class="w-full bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded">Add Entry</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="bg-[#1e293b] p-4 rounded-lg shadow">
+          <h2 class="text-lg font-semibold mb-2">This Week's Beer Money</h2>
+          <p id="weeklyTotal" class="text-2xl font-bold">0</p>
+        </div>
+        <div class="bg-[#1e293b] p-4 rounded-lg shadow">
+          <h2 class="text-lg font-semibold mb-2">Total Beer Money</h2>
+          <p id="totalEarnings" class="text-2xl font-bold">0</p>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="bg-[#1e293b] p-4 rounded-lg shadow mb-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+          <h2 class="text-lg font-semibold">Beer Money Chart</h2>
+          <!-- Toggle -->
+          <div class="inline-flex rounded overflow-hidden border border-gray-600">
+            <button id="modePerApp" class="px-3 py-1 text-sm bg-[whitesmoke] text-slate-900">Per App</button>
+            <button id="modeTotal"  class="px-3 py-1 text-sm bg-transparent hover:bg-slate-700">Total All Apps</button>
+          </div>
+        </div>
+        <div class="h-64">
+          <canvas id="beerChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Tracking Table -->
+      <div class="bg-[#1e293b] p-4 rounded-lg shadow">
+        <h2 class="text-lg font-semibold mb-3">Beer Money Tracking</h2>
+        <div class="table-wrap">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-gray-600">
+                <th class="p-2">Date</th>
+                <th class="p-2">App</th>
+                <th class="p-2">Currency</th>
+                <th class="p-2">Amount</th>
+                <th class="p-2">Remarks</th>
+                <th class="p-2">Action</th>
+              </tr>
+            </thead>
+            <tbody id="historyTable" class="text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+/* ---------- Storage Keys ---------- */
+const K_APPS = "beerMoneyApps";
+const K_CURR = "beerMoneyCurrencies";
+const K_ENTS = "beerMoneyEntries";
+const K_MODE = "beerMoneyChartMode"; // 'perApp' or 'total'
+
+/* ---------- State ---------- */
+let apps       = JSON.parse(localStorage.getItem(K_APPS)) || ["TEST","add"];
+let currencies = JSON.parse(localStorage.getItem(K_CURR)) || ["PHP"];
+let entries    = JSON.parse(localStorage.getItem(K_ENTS)) || [];
+let chartMode  = localStorage.getItem(K_MODE) || "perApp";
+
+/* ---------- Elements ---------- */
+const appForm      = document.getElementById("appForm");
+const appInput     = document.getElementById("appInput");
+const appList      = document.getElementById("appList");
+const currencyForm = document.getElementById("currencyForm");
+const currencyInput= document.getElementById("currencyInput");
+const currencyList = document.getElementById("currencyList");
+
+const appSelect    = document.getElementById("appSelect");
+const currencySelect = document.getElementById("currencySelect");
+const entryForm    = document.getElementById("entryForm");
+const amountInput  = document.getElementById("amountInput");
+const remarksInput = document.getElementById("remarksInput");
+const dateInput    = document.getElementById("dateInput");
+
+const historyTable = document.getElementById("historyTable");
+const totalEarnings= document.getElementById("totalEarnings");
+const weeklyTotal  = document.getElementById("weeklyTotal");
+
+const btnPerApp = document.getElementById("modePerApp");
+const btnTotal  = document.getElementById("modeTotal");
+
+/* ---------- Helpers ---------- */
+const save = () => {
+  localStorage.setItem(K_APPS, JSON.stringify(apps));
+  localStorage.setItem(K_CURR, JSON.stringify(currencies));
+  localStorage.setItem(K_ENTS, JSON.stringify(entries));
+  localStorage.setItem(K_MODE, chartMode);
+};
+const fmt = n => (isFinite(n) ? Number(n).toFixed(2) : "0.00");
+const todayISO = () => new Date().toISOString().split("T")[0];
+
+/* ---------- Renderers ---------- */
+function renderAppControls() {
+  // dropdowns
+  appSelect.innerHTML = apps.map(a => `<option value="${a}">${a}</option>`).join("");
+  // picker lists
+  appList.innerHTML = apps.map((a,i)=>`
+    <li class="flex items-center justify-between">
+      <span>${a}</span>
+      <span>
+        <button class="text-yellow-400 hover:underline mr-3" onclick="editApp(${i})">Edit</button>
+        <button class="text-red-400 hover:underline" onclick="deleteApp(${i})">Delete</button>
+      </span>
+    </li>
+  `).join("");
+}
+
+function renderCurrencyControls() {
+  currencySelect.innerHTML = currencies.map(c => `<option value="${c}">${c}</option>`).join("");
+  currencyList.innerHTML = currencies.map((c,i)=>`
+    <li class="flex items-center justify-between">
+      <span>${c}</span>
+      <span>
+        <button class="text-yellow-400 hover:underline mr-3" onclick="editCurrency(${i})">Edit</button>
+        <button class="text-red-400 hover:underline" onclick="deleteCurrency(${i})">Delete</button>
+      </span>
+    </li>
+  `).join("");
+}
+
+function renderEntries() {
+  // oldest -> newest for better reading/graph
+  const sorted = [...entries].sort((a,b)=> new Date(a.date) - new Date(b.date));
+  historyTable.innerHTML = sorted.map((e, idx) => `
+    <tr class="border-b border-gray-700">
+      <td class="p-2 whitespace-nowrap">${e.date}</td>
+      <td class="p-2">${e.app}</td>
+      <td class="p-2">${e.currency}</td>
+      <td class="p-2">${fmt(e.amount)}</td>
+      <td class="p-2">${e.remarks}</td>
+      <td class="p-2"><button class="text-red-400 hover:underline" onclick="deleteEntry(${entries.indexOf(e)})">Delete</button></td>
+    </tr>
+  `).join("");
+
+  // totals
+  const total = entries.reduce((s,e)=> s + Number(e.amount||0), 0);
+  totalEarnings.textContent = fmt(total);
+
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay()); // Sunday
+  const weekTotalSum = entries
+    .filter(e => new Date(e.date) >= weekStart)
+    .reduce((s,e)=> s + Number(e.amount||0), 0);
+  weeklyTotal.textContent = fmt(weekTotalSum);
+
+  updateChart(); // refresh using sorted data
+}
+
+/* ---------- Apps CRUD ---------- */
+appForm.addEventListener("submit", e=>{
+  e.preventDefault();
+  const val = appInput.value.trim();
+  if(!val || apps.includes(val)) return;
+  apps.push(val);
+  appInput.value = "";
+  save(); renderAppControls();
+});
+function editApp(i){
+  const old = apps[i];
+  const nn = prompt("Edit app name:", old);
+  if(!nn || nn.trim()===old) return;
+  const newName = nn.trim();
+  apps[i] = newName;
+  // update existing entries to keep continuity
+  entries.forEach(en => { if(en.app === old) en.app = newName; });
+  save(); renderAppControls(); renderEntries();
+}
+function deleteApp(i){
+  const removed = apps.splice(i,1)[0];
+  // Keep historical entries; just remove from selector list
+  save(); renderAppControls(); renderEntries();
+}
+
+/* ---------- Currency CRUD ---------- */
+currencyForm.addEventListener("submit", e=>{
+  e.preventDefault();
+  const val = currencyInput.value.trim().toUpperCase();
+  if(!val || currencies.includes(val)) return;
+  currencies.push(val);
+  currencyInput.value = "";
+  save(); renderCurrencyControls();
+});
+function editCurrency(i){
+  const old = currencies[i];
+  const nn = prompt("Edit currency:", old);
+  if(!nn || nn.trim().toUpperCase()===old) return;
+  const newVal = nn.trim().toUpperCase();
+  currencies[i] = newVal;
+  // keep entries as-is (historic); optionally update, but typically keep
+  save(); renderCurrencyControls(); renderEntries();
+}
+function deleteCurrency(i){
+  currencies.splice(i,1);
+  save(); renderCurrencyControls();
+}
+
+/* ---------- Entries ---------- */
+entryForm.addEventListener("submit", e=>{
+  e.preventDefault();
+  const entry = {
+    app: appSelect.value,
+    currency: currencySelect.value,
+    amount: parseFloat(amountInput.value),
+    remarks: remarksInput.value.trim(),
+    date: dateInput.value
+  };
+  if(!entry.app || !entry.currency || !entry.remarks || !entry.date || !(entry.amount >= 0)){
+    alert("All fields are required."); return;
+  }
+  entries.push(entry);
+  amountInput.value = "";
+  remarksInput.value = "";
+  dateInput.value = todayISO();
+  save(); renderEntries();
+});
+function deleteEntry(i){
+  entries.splice(i,1);
+  save(); renderEntries();
+}
+
+/* ---------- Chart ---------- */
+const ctx = document.getElementById("beerChart").getContext("2d");
+let beerChart = new Chart(ctx, {
+  type: "line",
+  data: { labels: [], datasets: [] },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: "top", labels: { color: "#e5e7eb" } } },
+    scales: {
+      x: { ticks: { color: "#e5e7eb" }, grid: { color: "rgba(255,255,255,0.08)" } },
+      y: { ticks: { color: "#e5e7eb" }, grid: { color: "rgba(255,255,255,0.08)" } }
+    }
+  }
+});
+
+const palette = [
+  "#60a5fa","#34d399","#f472b6","#f59e0b","#a78bfa","#22d3ee",
+  "#ef4444","#10b981","#eab308","#fb7185","#93c5fd","#4ade80"
+];
+
+function updateChart(){
+  const dates = [...new Set(entries.map(e=>e.date))].sort((a,b)=> new Date(a)-new Date(b));
+  if(chartMode === "total"){
+    const totals = dates.map(d =>
+      entries.filter(e=>e.date===d)
+             .reduce((s,e)=> s + Number(e.amount||0), 0)
+    );
+    beerChart.data.labels = dates;
+    beerChart.data.datasets = [{
+      label: "All Apps",
+      data: totals,
+      borderColor: palette[0],
+      backgroundColor: "rgba(96,165,250,0.25)",
+      fill: true,
+      tension: 0.35,
+      borderWidth: 2,
+      pointRadius: 3
+    }];
+  } else {
+    // Per App comparison
+    beerChart.data.labels = dates;
+    beerChart.data.datasets = apps.map((app, i)=> {
+      const series = dates.map(d =>
+        entries.filter(e=>e.date===d && e.app===app)
+               .reduce((s,e)=> s + Number(e.amount||0), 0)
+      );
+      // Only show apps that have any value
+      const hasData = series.some(v=>v>0);
+      return hasData ? {
+        label: app,
+        data: series,
+        borderColor: palette[i % palette.length],
+        backgroundColor: "transparent",
+        fill: false,
+        tension: 0.35,
+        borderWidth: 2,
+        pointRadius: 3
+      } : null;
+    }).filter(Boolean);
+  }
+  beerChart.update();
+}
+
+/* ---------- Toggle UI ---------- */
+function setModeUI(){
+  if(chartMode === "perApp"){
+    btnPerApp.className = "px-3 py-1 text-sm bg-[whitesmoke] text-slate-900";
+    btnTotal.className  = "px-3 py-1 text-sm bg-transparent hover:bg-slate-700";
+  } else {
+    btnTotal.className  = "px-3 py-1 text-sm bg-[whitesmoke] text-slate-900";
+    btnPerApp.className = "px-3 py-1 text-sm bg-transparent hover:bg-slate-700";
+  }
+}
+btnPerApp.addEventListener("click", ()=>{ chartMode="perApp"; save(); setModeUI(); updateChart(); });
+btnTotal .addEventListener("click", ()=>{ chartMode="total";  save(); setModeUI(); updateChart(); });
+
+/* ---------- Init ---------- */
+(function init(){
+  // default date today
+  dateInput.value = todayISO();
+  renderAppControls();
+  renderCurrencyControls();
+  setModeUI();
+  renderEntries(); // also calls updateChart
+})();
+</script>
+</body>
+</html>
